@@ -1,0 +1,9 @@
+Reconstruction for 2CVs in a 3D space and view in GNUPLOT as
+static graph and as GIF animation through ImageMagick (for e.g. animate)
+
+Vreco_CPMD.f90 input file: vreco.inp
+Vreco_CPMD.f90 output    : vreco.out
+shell script for GNUPLOT : view_gnuplot_script 
+                           - plot V.final.out to postscript file fes-example-1.ps
+                           - plot V.dynamic.out and convert to fes-dyn-example-1.gif
+

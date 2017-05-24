@@ -1,0 +1,154 @@
+--- ../../version10.3/Vreco_CPMD/Vreco_CPMD.f90	2008-07-09 02:10:44.000000000 +0200
++++ Vreco_CPMD.f90	2008-09-10 14:03:05.000000000 +0200
+@@ -221,13 +221,13 @@
+ INTEGER        :: i, j, k, l, iii, ios, il, ix, iy, iz, kk, ll
+ INTEGER        :: ncoll, dtype, ndyn, eunit, nproj, mtdstp, lproj, iproj
+ LOGICAL        :: prnt_dyn, walker, read_int, cube_cv, cube_only
+-LOGICAL        :: proj, cube_cvmdck, cube_colvar, cube_full
++LOGICAL        :: proj, cube_cvmdck, cube_colvar, cube_full, reduce
+ 
+ REAL (KIND=dp), ALLOCATABLE :: tmp(:), smin(:), smax(:), dg(:),         &
+      s(:), s1(:), s2(:), dif1(:), dif2(:), so(:,:), ds(:), w(:), g(:),  &
+      scal(:,:), maxcol(:), mincol(:), scal0(:), cube_value(:,:,:)
+ 
+-INTEGER, ALLOCATABLE :: scoll(:), n(:),cv_proj(:),dims(:)
++INTEGER, ALLOCATABLE :: scoll(:), n(:),cv_proj(:),dims(:),cv_red(:)
+ INTEGER, EXTERNAL    :: OMP_GET_NUM_THREADS
+ INTEGER              :: nthreads
+ 
+@@ -261,6 +261,7 @@
+ WRITE(*,'(t2,a,/)')'**************************************************************'
+ 
+ proj=.false.
++reduce=.false.
+ nproj=0
+ shft=.false.
+ tube=.false.
+@@ -369,6 +370,15 @@
+       IF (.not.(cube_cvmdck.or.cube_colvar.or.cube_full))cube_full=.true.
+    ELSE IF (INDEX(pfmt0,'PROJECT') /= 0) THEN
+       proj=.true.
++      IF(reduce) STOP ' PROJECT and REDUCE can not be used together! '
++      READ(*,*,err=333,end=333)nproj
++      ALLOCATE(cv_proj(nproj))
++      DO i=1,nproj
++         READ(*,*,err=333,end=333)cv_proj(i)
++      END DO
++   ELSE IF (INDEX(pfmt0,'REDUCE') /= 0) THEN
++      reduce=.true.
++      IF(proj) STOP ' PROJECT and REDUCE can not be used together! '
+       READ(*,*,err=333,end=333)nproj
+       ALLOCATE(cv_proj(nproj))
+       DO i=1,nproj
+@@ -391,7 +401,7 @@
+ 
+ !rearrange according to projection
+ ALLOCATE(dims(ncoll))
+-IF (proj) THEN
++IF (proj.or.reduce) THEN
+    kk=1
+    j=1
+    DO iii=1,ncoll
+@@ -413,7 +423,7 @@
+    END DO
+ ENDIF
+ 
+-IF (proj) THEN
++IF (proj.or.reduce) THEN
+    ALLOCATE(tmp(3*nd))
+    DO iii=1,nd
+       tmp(dims(iii))=smin(iii)
+@@ -431,6 +441,11 @@
+ l=1
+ DO i=1,nd
+   n(i) = NINT((ABS(smax(i)-smin(i)))/dg(i)) + 1 
++  IF((reduce).AND.(i.GT.(nd-nproj)))then
++    n(i)=1
++    smax(i)=smin(i)
++    WRITE(*,'(t2,a,i2,a,f8.4)')  'CV #',i,' is reduced at value  =', smin(i)
++  END IF
+   l = l*n(i)
+ END DO
+ 
+@@ -465,6 +480,8 @@
+ WRITE(*,'(t2,a,i8)')  'Number of CVs to reconstruct    =', nd
+ IF (proj)&
+ WRITE(*,'(t2,a,i8)')  'Number of CVs to project        =', nd
++IF (reduce)&
++WRITE(*,'(t2,a,i8)')  'Number of CVs to reduce         =', nd
+ 
+ pfmt4='*'
+ IF (nd<10) WRITE(pfmt4,'(a6,i1,a3)')'(t2,a,',nd,'i8)'
+@@ -503,12 +520,8 @@
+ ndyn=1
+ IF (prnt_dyn) THEN
+    ndyn = (it+dyn_frq-1)/dyn_frq
+-   IF (proj) THEN
+-      IF (dtype==1) i = ndyn+nd-nproj
+-   ELSE
+-      IF (dtype==1) i = ndyn+nd
+-   END IF
+-   IF (dtype==2)    i = ndyn
++   IF (dtype==1) i = ndyn+nd-nproj
++   IF (dtype==2) i = ndyn
+ 
+    IF (i<10) THEN
+       WRITE(pfmt1,'(a1,i1,a6)')'(',i,'f16.8)'
+@@ -637,7 +650,7 @@
+ 
+ g(1:nd)=smin(1:nd)
+ IF (cube_cv) THEN
+-   IF (nd/=3) STOP '*** Generating Cube file NOT possible..because #CV /= 3 ***'
++   IF ((nd-nproj)/=3) STOP '*** Generating Cube file NOT possible..because #CV /= 3 ***'
+ 300 CONTINUE
+    IF (cube_cvmdck) THEN
+       WRITE(*,'(t2,a)') 'Final potential for cvmdck_mtd  as volumetric data in V.cvmdck.cube'
+@@ -671,7 +684,7 @@
+             exit DO_cube
+             close(18)
+          END IF
+-         s(1:3)=tmp(nd+1:2*nd+1)
++         s(1:nd)=tmp(nd+1:2*nd+1)
+          ix=NINT((s(1)-smin(1))/dg(1))+1
+          iy=NINT((s(2)-smin(2))/dg(2))+1
+          iz=NINT((s(3)-smin(3))/dg(3))+1
+@@ -687,10 +700,7 @@
+          iy=NINT((s(2)-smin(2))/dg(2))+1
+          iz=NINT((s(3)-smin(3))/dg(3))+1
+          CALL get_potential(so,scoll,scal,ds,s,w,.false.,1,tmp,v)
+-         ! print *,ix,iy,iz,v
+          cube_value(ix,iy,iz)=MAX(MAX(cube_value(ix,iy,iz),v),1.0d-6)
+-         ! print *,ix,iy,iz,cube_value(ix,iy,iz)
+-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          g(nd)=g(nd)+dg(nd)
+          ll=1
+          DO_dim0:DO k=nd,1,-1 
+@@ -704,8 +714,7 @@
+                EXIT DO_dim0
+             END IF
+          END DO DO_dim0
+-         s(1:3)=g(1:nd)
+-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
++         s(1:nd)=g(1:nd)
+       ELSE IF (cube_colvar) THEN
+          IF (il == it) THEN
+             cube_colvar=.false.
+@@ -736,7 +745,6 @@
+       END IF
+       k=k+1
+       cube_tmp(k)=cube_value(ix,iy,iz)
+-      !write(*,*)il,ix,iy,iz,k,cube_tmp(k)
+       iz=iz+1
+       IF (il == l) THEN
+          WRITE(pfmt4,'(a,i1,a6)')'(',k,'e13.5)'
+@@ -802,8 +810,8 @@
+ 
+       vmax = MAX(vmax,v)
+       IF (dtype == 1) THEN
+-         WRITE(13,pfmt0) s(1:nd), v*(-1.d0)*econv(eunit)
+-         IF (prnt_dyn) WRITE(14,pfmt1) s(1:nd), tmp(1:ndyn)*(-1.d0)*econv(eunit)
++         WRITE(13,pfmt0) s(1:nd-nproj), v*(-1.d0)*econv(eunit)
++         IF (prnt_dyn) WRITE(14,pfmt1) s(1:nd-nproj), tmp(1:ndyn)*(-1.d0)*econv(eunit)
+       ELSE 
+          WRITE(13,pfmt0) v*(-1.0)*econv(eunit)
+          IF (prnt_dyn) WRITE(14,pfmt1) tmp(1:ndyn)*(-1.d0)*econv(eunit)

@@ -1,0 +1,12 @@
+file = V.final.out
+grid = 141 x 141
+format = ascii
+interleaving = record
+majority = row
+field = field0
+structure = scalar
+type = float
+dependency = positions
+positions = regular, regular, -0.20, 0.01, -0.20, 0.01
+
+end

@@ -1,0 +1,42 @@
+#!/bin/sh
+gnuplot <<EOF
+set term postscript color solid "Times-Roman" 12
+#set key left top spacing 1.2 width 1.2 box
+set title "Demo FES from Metadynamics " 
+#
+set contour both
+set cntrparam levels 30
+set xlabel "CV 1"
+set ylabel "CV 2"
+set zlabel "F(s) [kJ/mol]"
+# Output
+#
+set output "fes-example-1.ps"
+#
+#
+splot 'V.final.out' using 1:2:3 with lines lt 1
+EOF
+
+for s in `seq -f %03g 3 24` 
+do \
+  gnuplot <<EOF
+  set term postscript color landscape
+  set pm3d explicit
+  set cbrange [-100:0]
+  set title "Demo FES from Metadynamics " 
+#
+  set xlabel "CV 1"
+  set ylabel "CV 2"
+  set zlabel "F(s) [kJ/mol]"
+# Output
+#
+  set output "fes-example-1-tmp$s.ps"
+#
+#
+  splot [:][:][-100:0]'V.dynamic.out' using 1:2:$s with pm3d
+
+EOF
+
+done
+convert -rotate 90 -delay 20 fes-example-1-tmp*.ps fes-example-1-tmp$s.ps fes-example-1-tmp$s.ps fes-dyn-example-1.gif 
+rm -f fes-example-1-tmp*.ps

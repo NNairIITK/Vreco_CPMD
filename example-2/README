@@ -1,0 +1,21 @@
+Reconstruction for 2CVs in a 3D space and view in OpenDX. 
+PRINT NOGRID is used for this purpose. 
+
+Vreco_CPMD.f90 input file: vreco.inp
+Vreco_CPMD.f90 output    : vreco.out
+OPENDX script            : vreco.net and vreco.general
+
+Using OPENDX:
+------------------
+
+run in command line by 
+
+dx -program vreco.net
+
+Go to "Execute" -> "Execute Once" to visualize the free energy surface.
+Image can be saved as "File" -> "Save As" in the Image window.
+Choose resolution and format as you prefer. A sample image vreco.tiff 
+in low resolution is also present in this directory. 
+
+Edit vreco.general if you change the name of the file V.final.out or 
+the grids information. It is self-explanatory any way.

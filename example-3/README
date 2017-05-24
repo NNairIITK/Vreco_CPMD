@@ -1,0 +1,10 @@
+Reconstruction for 3 CVs in a 4D space and visualize as a Gaussian cube file. 
+An example VMD script is provided to view the cube file, including some of the 
+analysis done on this example free energy surface.
+
+Vreco_CPMD.f90 input file: vreco.inp
+Vreco_CPMD.f90 output    : vreco.out
+vreco.vmd                : script to view the cube file in VMD 
+                           A snapshot from VMD is in snap.tga
+Run VMD in command line as
+vmd -e vreco.vmd
