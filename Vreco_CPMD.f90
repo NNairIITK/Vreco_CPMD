@@ -29,23 +29,23 @@ MODULE pot_data
 
 CONTAINS
 !    
-  SUBROUTINE get_potential(so,scoll,scal,ds,s,w,prnt_dyn,ndyn,tmp,v)
+  SUBROUTINE get_potential(so,scoll,is_torsion,scal,ds,s,w,prnt_dyn,ndyn,tmp,v)
     IMPLICIT NONE
 
     ! arguments
     INTEGER, INTENT(IN)           :: scoll(nd), ndyn
     REAL (KIND=dp), INTENT(IN  )  :: so(it,nd),scal(it,nd),ds(nd),s(nd),w(it)
     REAL (KIND=dp), INTENT(INOUT) :: v,tmp(ndyn)
-    LOGICAL, INTENT(IN)           :: prnt_dyn
+    LOGICAL, INTENT(IN)           :: is_torsion(nd), prnt_dyn
 
     IF (prnt_dyn) THEN
-       CALL get_potential_dyn(so,scoll,scal,ds,s,w,ndyn,tmp,v)
+       CALL get_potential_dyn(so,scoll,is_torsion,scal,ds,s,w,ndyn,tmp,v)
     ELSE
-       CALL get_potential_reg(so,scoll,scal,ds,s,w,v)
+       CALL get_potential_reg(so,scoll,is_torsion,scal,ds,s,w,v)
     END IF
   END SUBROUTINE get_potential
 
-  SUBROUTINE get_potential_dyn(so,scoll,scal,ds,s,w,ndyn,tmp,v)
+  SUBROUTINE get_potential_dyn(so,scoll,is_torsion,scal,ds,s,w,ndyn,tmp,v)
       
     IMPLICIT NONE
 
@@ -53,11 +53,13 @@ CONTAINS
     INTEGER, INTENT(IN)           :: scoll(nd), ndyn
     REAL (KIND=dp), INTENT(IN)    :: so(it,nd),scal(it,nd),ds(nd),s(nd),w(it)
     REAL (KIND=dp), INTENT(INOUT) :: v,tmp(ndyn)
+    LOGICAL, INTENT(IN)           :: is_torsion(nd)
     
     ! local variables
     INTEGER                       :: i, ii, k, imax
     REAL (KIND=dp)                :: ef1, ef2, ef3, sp, vtmp
     REAL (KIND=dp), ALLOCATABLE   :: dif1(:), dif2(:), s1(:), s2(:)
+    REAL (KIND=dp), PARAMETER     :: pi=4.0_dp*ATAN(1.0_dp)
     
     v    = 0.0_dp
 
@@ -80,6 +82,17 @@ CONTAINS
           dif1(1:nd) = s(1:nd)-s1(1:nd)
           dif1(1:nd) = dif1(1:nd)/scal(i,1:nd)
        
+          DO k=1,nd
+            IF (is_torsion(k)) THEN
+              IF(dif1(k).GT.pi) THEN
+                dif1(k) = dif1(k) - 2.0D0*pi
+              ELSEIF(dif1(k).LT.-pi)THEN
+                dif1(k) = dif1(k) + 2.0D0*pi
+              ENDIF
+            ENDIF
+          ENDDO
+
+
           ef1 = DOT_PRODUCT(dif1(1:nd),dif1(1:nd))
        
           IF(.not.(shft .and. (SQRT(ef1) >= rcut*ds(i)) ) ) THEN
@@ -122,7 +135,7 @@ CONTAINS
   END SUBROUTINE get_potential_dyn
 !
 !
-  SUBROUTINE get_potential_reg(so,scoll,scal,ds,s,w,v)
+  SUBROUTINE get_potential_reg(so,scoll,is_torsion,scal,ds,s,w,v)
       
     IMPLICIT NONE
 
@@ -130,11 +143,16 @@ CONTAINS
     INTEGER, INTENT(IN)           :: scoll(nd)
     REAL (KIND=dp), INTENT(IN)    :: so(it,nd),scal(it,nd),ds(nd),s(nd),w(it)
     REAL (KIND=dp), INTENT(INOUT) :: v
+    LOGICAL, INTENT(IN)           :: is_torsion(nd)
     
     ! local variables
     INTEGER                       :: i, k
     REAL (KIND=dp)                :: ef1, ef2, ef3, sp
     REAL (KIND=dp), ALLOCATABLE   :: dif1(:), dif2(:), s1(:), s2(:)
+    REAL (KIND=dp), PARAMETER     :: pi=4.0_dp*ATAN(1.0_dp)
+    integer:: isss
+    data isss /0/
+    save ::  isss
     
     v    = 0.0_dp
 
@@ -150,6 +168,19 @@ CONTAINS
        END DO
        
        dif1(1:nd) = s(1:nd)-s1(1:nd)
+       isss=isss+1
+       DO k=1,nd
+         IF (is_torsion(k)) THEN
+           !if(isss.lt.2) print *, " k =", k, " is dihedral", "dif1(k)=", dif1(k), pi
+           IF(dif1(k).GT.pi) THEN
+             dif1(k) = dif1(k) - 2.0_dp*pi
+             !if(isss.lt.2) print *, " dif1 > pi ", k, "dif1=", dif1(k), " pi =", pi
+           ELSEIF(dif1(k).LT.-pi)THEN
+             dif1(k) = dif1(k) + 2.0_dp*pi
+             !if(isss.lt.2) print *, " dif1 < -pi", k, "dif1=", dif1(k), " pi =", pi
+           ENDIF
+         ENDIF
+       ENDDO
        dif1(1:nd) = dif1(1:nd)/scal(i,1:nd)
        
        ef1 = DOT_PRODUCT(dif1(1:nd),dif1(1:nd))
@@ -219,15 +250,16 @@ IMPLICIT NONE
 REAL (KIND=dp) :: v, sp, la, vmax, maxw, minw, ed(5)
 REAL (KIND=dp) :: cube_tmp(6),cube_rad,norm_proj,v_proj
 INTEGER        :: i, j, k, l, iii, ios, il, ix, iy, iz, kk, ll
-INTEGER        :: ncoll, dtype, ndyn, eunit, nproj, mtdstp, lproj, iproj
+INTEGER        :: ncoll, dtype, ndyn, eunit, nproj, mtdstp, lproj, iproj, ntorsion
 LOGICAL        :: prnt_dyn, walker, read_int, cube_cv, cube_only
 LOGICAL        :: proj, cube_cvmdck, cube_colvar, cube_full, reduce
+LOGICAL, ALLOCATABLE :: is_torsion(:)
 
 REAL (KIND=dp), ALLOCATABLE :: tmp(:), smin(:), smax(:), dg(:),         &
      s(:), s1(:), s2(:), dif1(:), dif2(:), so(:,:), ds(:), w(:), g(:),  &
      scal(:,:), maxcol(:), mincol(:), scal0(:), cube_value(:,:,:)
 
-INTEGER, ALLOCATABLE :: scoll(:), n(:),cv_proj(:),dims(:),cv_red(:)
+INTEGER, ALLOCATABLE :: scoll(:), n(:),cv_proj(:),dims(:),cv_red(:), int_tmp(:)
 INTEGER, EXTERNAL    :: OMP_GET_NUM_THREADS
 INTEGER              :: nthreads
 
@@ -317,6 +349,9 @@ ALLOCATE(s2(nd))     !gaussian center at time t+1
 ALLOCATE(g(nd))      !grid value
 ALLOCATE(maxcol(nd)) !max coll. variable
 ALLOCATE(mincol(nd)) !min coll. variable
+ALLOCATE(int_tmp(nd)) 
+ALLOCATE(is_torsion(nd)) !min coll. variable
+is_torsion(1:nd)=.false.
 
 read_input: DO j=1,999 !input file
    IF (j == 999) stop '*** END is missing in the inputfile ***'
@@ -384,6 +419,9 @@ read_input: DO j=1,999 !input file
       DO i=1,nproj
          READ(*,*,err=333,end=333)cv_proj(i)
       END DO
+   ELSE IF (INDEX(pfmt0,'TORSION') /= 0) THEN
+        READ(*,*,err=333,end=333)ntorsion
+        READ(*,*,err=333,end=333)int_tmp(1:ntorsion)
    ELSE
       PRINT *, 'unknown keyword: ', pfmt0
    END IF
@@ -423,6 +461,14 @@ ELSE
    END DO
 ENDIF
 
+if(ntorsion.gt.0)then
+  do i=1,ntorsion
+    iii=int_tmp(i)
+    is_torsion(dims(iii))=.true.
+  end do
+end if
+DEALLOCATE(int_tmp)
+
 IF (proj.or.reduce) THEN
    ALLOCATE(tmp(3*nd))
    DO iii=1,nd
@@ -448,6 +494,7 @@ DO i=1,nd
   END IF
   l = l*n(i)
 END DO
+
 
 OPEN(11,file='colvar_mtd',status='old',form='formatted',iostat=ios)
 IF (ios /= 0) STOP '!!! Cannot open file "colvar_mtd" for reading'
@@ -494,6 +541,14 @@ END IF
 IF (nd==1)pfmt4='(t2,a,i8)'
 IF ((nd>1).and.(nd-1<10)) WRITE(pfmt4,'(a9,i1,a12)')'(t2,a,i8,',nd-1,'("   x",i8))'
 WRITE(*,pfmt4)    'Grid Size                       =', n(1:nd)    
+WRITE(*,pfmt4)    'Torsions:'
+do it=1,nd
+  if(is_torsion(it))then 
+   write(*,'(a,i5,a)') '                          ', it, ': True '
+  else
+   write(*,'(a,i5,a)') '                          ', it, ': False '
+  end if
+end do
 
 !find # of mtd steps
 it=0
@@ -688,7 +743,7 @@ IF (cube_cv) THEN
          ix=NINT((s(1)-smin(1))/dg(1))+1
          iy=NINT((s(2)-smin(2))/dg(2))+1
          iz=NINT((s(3)-smin(3))/dg(3))+1
-         CALL get_potential(so,scoll,scal,ds,s,w,.false.,1,tmp,v)
+         CALL get_potential(so,scoll,is_torsion,scal,ds,s,w,.false.,1,tmp,v)
          cube_value(ix,iy,iz)=MAX(cube_value(ix,iy,iz),v)
       ELSE IF (cube_full) THEN
          IF (il == 1)s(1:3)=smin(1:3)
@@ -699,7 +754,7 @@ IF (cube_cv) THEN
          ix=NINT((s(1)-smin(1))/dg(1))+1
          iy=NINT((s(2)-smin(2))/dg(2))+1
          iz=NINT((s(3)-smin(3))/dg(3))+1
-         CALL get_potential(so,scoll,scal,ds,s,w,.false.,1,tmp,v)
+         CALL get_potential(so,scoll,is_torsion,scal,ds,s,w,.false.,1,tmp,v)
          cube_value(ix,iy,iz)=MAX(MAX(cube_value(ix,iy,iz),v),1.0d-6)
          g(nd)=g(nd)+dg(nd)
          ll=1
@@ -723,37 +778,52 @@ IF (cube_cv) THEN
          ix=NINT((s(1)-smin(1))/dg(1))+1
          iy=NINT((s(2)-smin(2))/dg(2))+1
          iz=NINT((s(3)-smin(3))/dg(3))+1
-         CALL get_potential(so,scoll,scal,ds,s,w,.false.,1,tmp,v)
+         CALL get_potential(so,scoll,is_torsion,scal,ds,s,w,.false.,1,tmp,v)
          cube_value(ix,iy,iz)=MAX(cube_value(ix,iy,iz),v)
       END IF
    END DO DO_cube
    DEALLOCATE(tmp)
-   il=0
-   ix=1
-   iy=1
-   iz=1
-   k=0
-   DO il=1,l
-      IF ((il>1).and.(MOD(il-1,n(3))) == 0) THEN
-         iz=1
-         iy=iy+1
-      END IF
-      IF ((il>1).and.(MOD(il-1,n(2)*n(3))) == 0) THEN
-         iz=1
-         iy=1
-         ix=ix+1
-      END IF
-      k=k+1
-      cube_tmp(k)=cube_value(ix,iy,iz)
+!   il=0
+!   ix=1
+!   iy=1
+!   iz=1
+!   k=0
+!   DO il=1,l
+!      IF ((il>1).and.(MOD(il-1,n(3))) == 0) THEN
+!         iz=1
+!         iy=iy+1
+!      END IF
+!      IF ((il>1).and.(MOD(il-1,n(2)*n(3))) == 0) THEN
+!         iz=1
+!         iy=1
+!         ix=ix+1
+!      END IF
+!      k=k+1
+!      cube_tmp(k)=cube_value(ix,iy,iz)
+!!      iz=iz+1
+!      IF(iz==n(3)) THEN
+!        WRITE(pfmt4,'(a,i1,a6)')'(',k,'e13.5)'
+!        WRITE(16,pfmt4) -cube_tmp(1:k)*econv(eunit)
+!      ELSE IF(MOD(iz,6)==0) THEN
+!        WRITE(16,'(6e13.5)') -cube_tmp(1:6)*econv(eunit)
+!        k=0
+!      END IF
 !      iz=iz+1
-      IF(iz==n(3)) THEN
-        WRITE(pfmt4,'(a,i1,a6)')'(',k,'e13.5)'
-        WRITE(16,pfmt4) -cube_tmp(1:k)*econv(eunit)
-      ELSE IF(MOD(iz,6)==0) THEN
-        WRITE(16,'(6e13.5)') -cube_tmp(1:6)*econv(eunit)
-        k=0
-      END IF
-      iz=iz+1
+
+!Nn check
+!do ix=1,n(1)
+  !do iy=1,n(2)
+    !do k=1,n(3)/6
+      !WRITE(16,'(6e13.5)')(-cube_value(ix,iy,iz)*econv(eunit), iz=(k-1)*6+1,k*6)
+    !end do
+   !end do
+!end do
+do ix=1,n(1)
+  do iy=1,n(2)
+      WRITE(16,'(6e13.5)')(-cube_value(ix,iy,iz)*econv(eunit), iz=1,n(3))
+   end do
+end do
+
 !      IF (il == l) THEN
 !        WRITE(pfmt4,'(a,i1,a6)')'(',k,'e13.5)'
 !        WRITE(16,pfmt4) -cube_tmp(1:k)*econv(eunit)
@@ -761,7 +831,8 @@ IF (cube_cv) THEN
 !        WRITE(16,'(6e13.5)') -cube_tmp(1:6)*econv(eunit)
 !        k=0
 !     END IF
-   END DO
+
+!   END DO
    
    CLOSE(16)
    DEALLOCATE(cube_value)
@@ -786,7 +857,7 @@ grids: DO il=1,l ! loop over all grid points
    
    s(1:nd) = g(1:nd)
 
-   CALL get_potential(so,scoll,scal,ds,s,w,prnt_dyn,ndyn,tmp,v)
+   CALL get_potential(so,scoll,is_torsion,scal,ds,s,w,prnt_dyn,ndyn,tmp,v)
    
    IF (proj) THEN
 
