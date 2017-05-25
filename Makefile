@@ -6,13 +6,13 @@
 #-------------G95----------------
 #FC= g95 -O2 -funroll-loops
 #-------------GFORTRAN-----------
-#FC= gfortran -Wall -O2 -funroll-loops
+FC= gfortran -Wall -O2 -funroll-loops
 #-------------GFORTRAN OpenMP ---
 #FC= gfortran -Wall -O2 -fopenmp -Wall -funroll-loops
 #-------------IFORT--------------
 #FC= ifort -i-static -O2 -unroll 
 #-------------IFORT OpenMP-------
-FC= ifort -i-static -O2 -unroll -openmp 
+#FC= ifort -i-static -O2 -unroll -openmp 
 #-------------IBM-RISC/PPC-------
 #FC= xlf95 -O2 -qarch=auto 
 #-------------IBM-RISC/PPC OpenMP-------
