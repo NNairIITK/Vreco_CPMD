@@ -234,3 +234,6 @@ colvar_mtd.reco and parvar_mtd.reco
 ## Bugs/Comments/Suggestions
 Please report bugs to nisanth.nair@theochem.rub.de
 
+
+# Credits
+autotools-skeleton (https://github.com/gizero/autotools-skeleton)

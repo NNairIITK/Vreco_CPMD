@@ -1,6 +1,7 @@
 ! written by nisanth.nair@theochem.rub.de
 ! please report bugs and send comments to nisanth.nair@theochem.rub.de or cpmd-list@cpmd.org
 ! Version 10.3 OpenMP parallelization and clean up by Axel Kohlmeyer
+! Version 10.4 Torsion constraint addition by Nisanth Nair
 MODULE kinds
   IMPLICIT NONE
   
