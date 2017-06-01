@@ -65,3 +65,12 @@ Makefile.in
 # http://www.gnu.org/software/texinfo
 
 /texinfo.tex
+
+# No need for the generated Makefile
+
+Makefile
+
+# Ignore configuration status and logs
+
+config.log
+config.status
