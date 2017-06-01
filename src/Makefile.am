@@ -6,7 +6,7 @@
 #-------------G95----------------
 #FC= g95 -O2 -funroll-loops
 #-------------GFORTRAN-----------
-FC= gfortran -Wall -O2 -funroll-loops
+#FC= gfortran -Wall -O2 -funroll-loops
 #-------------GFORTRAN OpenMP ---
 #FC= gfortran -Wall -O2 -fopenmp -Wall -funroll-loops
 #-------------IFORT--------------
@@ -27,10 +27,10 @@ all: default
 
 default: Vreco_CPMD.x mtd_restart_extract.x
 
-mtd_restart_extract.x : src/mtd_restart_extract.f90
+mtd_restart_extract.x : mtd_restart_extract.f90
 	$(FC) -o  $@  $^
 
-Vreco_CPMD.x : src/Vreco_CPMD.f90
+Vreco_CPMD.x : Vreco_CPMD.f90
 	$(FC) -o  $@  $^
 
 #
@@ -46,4 +46,4 @@ diff:
 	rcsdiff -u *,v
 
 clean :
-	rm -f src/*.mod src/*.o src/*.L src/*~ src/Vreco_CPMD.x src/mtd_restart_extract.x
+	rm -f *.mod *.o *.L *~ Vreco_CPMD.x mtd_restart_extract.x
