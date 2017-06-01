@@ -6,8 +6,11 @@ This is the development version of the code and needs to be configured as follow
 
 ```bash
 $ aclocal
-$ autoconf
 $ autoheader
+$ autoconf
+$ automake --add-missing
+$ ./configure
+$ make
 ```
 
 Manual for Vreco_CPMD.f90 code version 10.3 (Nisanth N. Nair 08/07/08)
