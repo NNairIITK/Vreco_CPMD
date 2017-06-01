@@ -1,5 +1,15 @@
 # Vreco_CPMD
 
+## Installation Instructions
+
+This is the development version of the code and needs to be configured as follows:
+
+```bash
+$ aclocal
+$ autoconf
+$ autoheader
+```
+
 Manual for Vreco_CPMD.f90 code version 10.3 (Nisanth N. Nair 08/07/08)
 
 ## General Description
