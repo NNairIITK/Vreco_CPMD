@@ -66,9 +66,10 @@ Makefile.in
 
 /texinfo.tex
 
-# No need for the generated Makefile
+# No need for the generated Makefiles
 
 Makefile
+src/Makefile
 
 # Ignore configuration status and logs
 
