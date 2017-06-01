@@ -73,5 +73,9 @@ src/Makefile
 
 # Ignore configuration status and logs
 
-config.log
-config.status
+config.*
+
+# Autotools Cruft
+*.cache
+configure
+penmp
