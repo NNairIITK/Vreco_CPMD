@@ -23,15 +23,10 @@
 #FC= sunf95 -xopenmp=parallel -xO3 
 #################################
 
-all: default
+bin_PROGRAMS = Vreco_CPMD.x mtd_restart_extract.x
+Vreco_CPMD_x_SOURCES = Vreco_CPMD.f90
+mtd_restart_extract_x_SOURCES = mtd_restart_extract.f90
 
-default: Vreco_CPMD.x mtd_restart_extract.x
-
-mtd_restart_extract.x : mtd_restart_extract.f90
-	$(FC) -o  $@  $^
-
-Vreco_CPMD.x : Vreco_CPMD.f90
-	$(FC) -o  $@  $^
 
 #
 gtar: clean
