@@ -40,5 +40,5 @@ gtar: clean
 diff:
 	rcsdiff -u *,v
 
-clean :
+clean-local :
 	rm -f *.mod *.o *.L *~ Vreco_CPMD.x mtd_restart_extract.x
