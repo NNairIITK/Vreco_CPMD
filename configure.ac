@@ -49,3 +49,52 @@ fi
 AC_CONFIG_FILES([Makefile
                  src/Makefile])
 AC_OUTPUT
+
+echo "
+VRECO_CPMD configuration summary:
+=================================
+
+Basics:
+  Fortran90 compiler:        $FC
+  Fortran90 flags:           $FCFLAGS
+  Fortran77 compiler:        $F77
+  Fortran77 flags:           $FFLAGS
+  Linker flags:              $LDFLAGS
+  Linked libraries:          $LIBS_EXT_DEPS $LIBS
+
+Build:
+  Dynamic library:           $ax_build_dynamic
+
+Options:
+  With OpenMP:               $ax_fc_openmp_msg
+  With MPI:                  $ac_use_mpi
+   | include dir.:           $MPI_INCLUDE
+   | linker flags:           $MPI_LDFLAGS
+   | linked libraries:       $MPI_LIBS
+   | MPI_INIT_THREAD avail:  $ac_with_mpinithread
+   | MPI2 support:           $ac_with_mpi2
+  With dgemmsy support:      $ax_have_dgemmsy
+  With libyaml:              $ax_have_yaml
+   | C flags:                $LIB_YAML_CFLAGS
+   | linked libraries:       $LIB_YAML_LIBS
+
+Installation paths:
+  Source code location:      ${srcdir}
+  Prefix:                    $prefix
+  Exec prefix:               $exec_prefix
+  Binaries:                  $bindir
+  Static libraries:          $libdir
+  Fortran modules:           $moduledir
+  Documentation:             $docdir
+"
+
+if test x"$ac_use_mpi" = x"warn" -o x"$withscalapack" = x"warn" ; then
+  echo "Warnings:"
+  if test x"$ac_use_mpi" = x"warn" ; then
+    echo "  MPI:                       disabled by tests"
+  fi
+  if test x"$withscalapack" = x"warn" ; then
+    echo "  Scalapack binding:         disabled by tests"
+  fi
+
+fi
