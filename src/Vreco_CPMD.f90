@@ -31,6 +31,7 @@ MODULE pot_data
 CONTAINS
 !    
   SUBROUTINE get_potential(so,scoll,is_torsion,scal,ds,s,w,prnt_dyn,ndyn,tmp,v)
+    USE omp_lib
     IMPLICIT NONE
 
     ! arguments
@@ -47,7 +48,7 @@ CONTAINS
   END SUBROUTINE get_potential
 
   SUBROUTINE get_potential_dyn(so,scoll,is_torsion,scal,ds,s,w,ndyn,tmp,v)
-      
+
     IMPLICIT NONE
 
     ! arguments
@@ -243,6 +244,7 @@ END MODULE pot_data
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 PROGRAM Vreco
 
+USE omp_lib
 USE kinds
 USE pot_data 
 
@@ -261,7 +263,6 @@ REAL (KIND=dp), ALLOCATABLE :: tmp(:), smin(:), smax(:), dg(:),         &
      scal(:,:), maxcol(:), mincol(:), scal0(:), cube_value(:,:,:)
 
 INTEGER, ALLOCATABLE :: scoll(:), n(:),cv_proj(:),dims(:),cv_red(:), int_tmp(:)
-INTEGER, EXTERNAL    :: OMP_GET_NUM_THREADS
 INTEGER              :: nthreads
 
 CHARACTER(LEN=80)    :: pfmt0, pfmt1, pfmt2, pfmt4
@@ -519,7 +520,7 @@ WRITE(*,*)
 !$ nthreads = OMP_GET_NUM_THREADS()
 !$ CALL OMP_SET_NESTED(.false.)
 !$OMP master
-!$ WRITE(*,'(t2,a,i4,a,/)')  'OpenMP version using ', nthreads, ' threads.'
+WRITE(*,'(t2,a,i4,a,/)')  'OpenMP version using ', nthreads, ' threads.'
 !$OMP end master
 !$OMP end parallel
 !
