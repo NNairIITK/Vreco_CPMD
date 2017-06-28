@@ -247,6 +247,7 @@ USE omp_lib
 USE kinds
 USE pot_data 
 
+
 IMPLICIT NONE
 
 REAL (KIND=dp) :: v, sp, la, vmax, maxw, minw, ed(5)
@@ -312,11 +313,10 @@ cube_full=.false.
 cube_colvar=.false.
 
 read_int=.false.
-nd=0
-ncoll=0
+nd=0 ! Number of CVs to reconstruct project and reduce.
+ncoll=0 ! This is the second line which shows the number of CVs.
 mtdstp=0
 
-nd=0
 READ(5,'(a)',err=333,end=333) pfmt0(1:80)
 IF (INDEX(pfmt0,'NCV') /= 0) THEN
    IF (INDEX(pfmt0,'RECON') /= 0) THEN
@@ -332,6 +332,7 @@ IF (INDEX(pfmt0,'NCV') /= 0) THEN
       DO i=1,nd
          scoll(i)=i
       END DO
+    print *, ncoll
    END IF
 ELSE
    STOP '*** First Keyword should be NCV ***'
@@ -663,7 +664,8 @@ END DO
 
 ALLOCATE(tmp(nd*2))
 DO j=1,it
-   DO iii=1,nd  
+   DO iii=1,nd
+    print *, dims(iii)  
       tmp(dims(iii))=so(j,iii) 
       tmp(dims(iii)+nd)=scal(j,iii)
    END DO
@@ -747,6 +749,7 @@ IF (cube_cv) THEN
          CALL get_potential(so,scoll,is_torsion,scal,ds,s,w,.false.,1,tmp,v)
          cube_value(ix,iy,iz)=MAX(cube_value(ix,iy,iz),v)
       ELSE IF (cube_full) THEN
+      print *, il
          IF (il == 1)s(1:3)=smin(1:3)
          IF (il == 1)g(1:3)=smin(1:3)
          IF (il == l) THEN
@@ -965,115 +968,3 @@ WRITE(*,'(/,a,a,/)')'Last line read is:',pfmt0
 STOP
 !
 END PROGRAM Vreco
-
-
-!****************************************************************************************!
-
-SUBROUTINE MPI_Start()
-IMPLICIT NONE
-INCLUDE 'mpif.h'
-INTEGER :: i_err
-#if defined (_PARALLEL)
-  call MPI_INIT(i_err)
-#endif
-END
-!****************************************************************************************!
-
-SUBROUTINE MPI_Stop()
-IMPLICIT NONE
-INCLUDE 'mpif.h'
-INTEGER :: i_err
-#if defined (_PARALLEL)
-call MPI_FINALIZE(i_err)
-#endif
-END
-!****************************************************************************************!
-
-SUBROUTINE get_ncpu(ncpu)
-IMPLICIT NONE
-INCLUDE 'mpif.h'
-INTEGER :: ncpu, i_err
-ncpu=1
-#if defined (_PARALLEL)
-call MPI_COMM_SIZE(MPI_COMM_WORLD,ncpu,i_err)
-#endif
-END
-!****************************************************************************************!
-
-SUBROUTINE get_cpuid(icpu)
-IMPLICIT NONE
-INCLUDE 'mpif.h'
-INTEGER :: icpu, i_err
-icpu=0
-#if defined (_PARALLEL)
-call MPI_COMM_RANK(MPI_COMM_WORLD,icpu,i_err)
-#endif
-END
-!****************************************************************************************!
-
-SUBROUTINE IBcast(myint,leng)
-IMPLICIT NONE
-INCLUDE 'mpif.h'
-INTEGER :: leng, myint(*), i_err
-#if defined (_PARALLEL)
-CALL MPI_BCAST(myint,leng,MPI_INTEGER,0,MPI_COMM_WORLD,i_err)
-#endif
-END
-!****************************************************************************************!
-
-SUBROUTINE RBcast(myreal,leng)
-IMPLICIT NONE
-INCLUDE 'mpif.h'
-INTEGER :: myreal(*)
-INTEGER :: leng, i_err
-#if defined (_PARALLEL)
-CALL MPI_BCAST(myreal,leng,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,i_err)
-#endif
-END
-!****************************************************************************************!
-
-SUBROUTINE Sync_Procs
-IMPLICIT NONE
-INCLUDE 'mpif.h'
-INTEGER i_err
-#if defined (_PARALLEL)
-call MPI_Barrier(MPI_COMM_WORLD,i_err)
-#endif
-END
-!****************************************************************************************!
-
-SUBROUTINE Set_Parent(parent)
-IMPLICIT NONE
-INCLUDE 'mpif.h'
-LOGICAL :: parent
-INTEGER :: icpu, i_err
-parent=.false.
-icpu=0
-#if defined (_PARALLEL)
-CALL MPI_COMM_RANK(MPI_COMM_WORLD,icpu,i_err)
-#endif
-IF(icpu.eq.0)parent=.true.
-END
-!****************************************************************************************!
-
-SUBROUTINE GlobSumR(myreal,leng)
-IMPLICIT NONE
-REAL*8 :: myreal(*)
-INTEGER :: leng,i_err
-INCLUDE 'mpif.h'
-#if defined (_PARALLEL)
-call MPI_Allreduce(myreal,myreal,leng,MPI_INTEGER,MPI_SUM,MPI_COMM_WORLD,i_err)
-#endif
-END
-!****************************************************************************************!
-
-SUBROUTINE GlobSumI(myint,leng)
-IMPLICIT NONE
-INTEGER :: myint(*)
-INTEGER :: leng,i_err
-INCLUDE 'mpif.h'
-#if defined (_PARALLEL)
-call MPI_Allreduce(myint,myint,leng,MPI_INTEGER,MPI_SUM,MPI_COMM_WORLD,i_err)
-#endif
-END
-!****************************************************************************************!
