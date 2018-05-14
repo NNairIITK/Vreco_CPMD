@@ -67,12 +67,6 @@ Build:
 
 Options:
   With OpenMP:               $ax_fc_openmp_msg
-  With MPI:                  $ac_use_mpi
-   | include dir.:           $MPI_INCLUDE
-   | linker flags:           $MPI_LDFLAGS
-   | linked libraries:       $MPI_LIBS
-   | MPI_INIT_THREAD avail:  $ac_with_mpinithread
-   | MPI2 support:           $ac_with_mpi2
   With dgemmsy support:      $ax_have_dgemmsy
   With libyaml:              $ax_have_yaml
    | C flags:                $LIB_YAML_CFLAGS
