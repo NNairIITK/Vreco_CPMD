@@ -245,16 +245,9 @@ PROGRAM Vreco
 
 USE kinds
 USE pot_data 
-include "mpif.h"
 
 IMPLICIT NONE
 
-! MPI variables
-INTEGER           :: comm, rank, numproc, ierror, root
-INTEGER           ::status(MPI_STATUS_SIZE)
-CHARACTER(LEN=80) :: message_sent, message_received
-
-! Program variables
 REAL (KIND=dp) :: v, sp, la, vmax, maxw, minw, ed(5)
 REAL (KIND=dp) :: cube_tmp(6),cube_rad,norm_proj,v_proj
 INTEGER        :: i, j, k, l, iii, ios, il, ix, iy, iz, kk, ll
@@ -300,12 +293,6 @@ WRITE(*,'(t2,a)')  '**     Help           : see the README file                 
 WRITE(*,'(t2,a)')  '**     Contact        : nisanth.nair@theochem.rub.de        **'
 WRITE(*,'(t2,a,/)')'**************************************************************'
 
-! MPI initialization
-message_received='No message received'
-message_sent='No message sent'
-root=0
-
-! Program initialization
 proj=.false.
 reduce=.false.
 nproj=0
